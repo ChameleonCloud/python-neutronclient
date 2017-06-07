@@ -65,7 +65,20 @@ def _add_updatable_args(parser):
     parser.add_argument(
         '--device_owner',
         help=argparse.SUPPRESS)
-
+    # ----- Dynamic VLANs support -----
+    parser.add_argument(
+        '--binding-switch-id',
+        help=_('phy Switch ID of this port.'))
+    parser.add_argument(
+        '--binding-switch_id',
+        help=argparse.SUPPRESS)
+    parser.add_argument(
+        '--binding-port-id',
+        help=_('phy Port ID of this port.'))
+    parser.add_argument(
+        '--binding-port_id',
+        help=argparse.SUPPRESS)
+    # ---------------------------------
 
 def _updatable_args2body(parsed_args, body, client):
     if parsed_args.device_id:
@@ -253,7 +266,11 @@ class CreatePort(neutronV20.CreateCommand, UpdatePortSecGroupMixin,
         if parsed_args.binding_profile:
             body['port'].update({'binding:profile':
                                  jsonutils.loads(parsed_args.binding_profile)})
-
+        # ----- Dynamic VLANs support -----
+        if parsed_args.binding_switch_id and parsed_args.binding_port_id:
+            body['port'].update({'binding:profile':jsonutils.loads('{"local_link_information": [{"port_id": "'+ parsed_args.binding_port_id +'", "switch_id": "'+parsed_args.binding_switch_id+'"}]}')})
+            #body['port'].update({'binding:profile':jsonutils.loads('{"local_link_information": [{"binding_port_id": "'+ parsed_args.binding_port_id +'", "binding_switch_id": "'+parsed_args.binding_switch_id+'"}]}')})
+        # ---------------------------------
         self.args2body_secgroup(parsed_args, body['port'])
         self.args2body_extradhcpopt(parsed_args, body['port'])
         self.args2body_qos_policy(parsed_args, body['port'])
@@ -294,6 +311,12 @@ class UpdatePort(neutronV20.UpdateCommand, UpdatePortSecGroupMixin,
         if parsed_args.admin_state_up:
             body['port'].update({'admin_state_up':
                                 parsed_args.admin_state_up})
+        # ----- Dynamic VLANs support -----
+        if parsed_args.binding_switch_id and parsed_args.binding_port_id:
+            body['port'].update({'binding:profile':
+                                 jsonutils.loads('{"local_link_information": [{"port_id": "'+ parsed_args.binding_port_id +'", "switch_id": "'+parsed_args.binding_switch_id+'"}]}')})
+                                 #jsonutils.loads('{"local_link_information": [{"binding_port_id": "'+ parsed_args.binding_port_id +'", "binding_switch_id": "'+parsed_args.binding_switch_id+'"}]}')})
+        # ---------------------------------
 
         self.args2body_secgroup(parsed_args, body['port'])
         self.args2body_extradhcpopt(parsed_args, body['port'])
